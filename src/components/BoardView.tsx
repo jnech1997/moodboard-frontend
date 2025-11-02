@@ -208,7 +208,7 @@ export default function BoardView() {
   const renderItemCard = (item: any) => (
     <div
       key={item.id}
-      className={`group relative inline-block w-full mb-8 break-inside-avoid rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-800 ${item.shadow} hover:shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:-translate-y-1 transition-all duration-200 before:absolute before:inset-0 before:bg-[url('/noise.png')] before:opacity-10 before:pointer-events-none`}
+      className={`group relative inline-block w-full mb-8 break-inside-avoid rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-800 ${item.shadow} hover:shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:-translate-y-1 transition-all duration-200 before:absolute before:inset-0 before:opacity-10 before:pointer-events-none`}
     >
       {/* Processing Banner */}
       {item.embedding === null && (
