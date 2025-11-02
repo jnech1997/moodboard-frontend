@@ -357,21 +357,25 @@ export default function BoardList() {
                             ✓ Added!
                           </span>
                         ) : (
-                          <select
-                            className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-3 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            onChange={(e) => handleAddToBoard(item, Number(e.target.value))}
-                            defaultValue=""
-                            style={{ minHeight: "38px" }} // Makes it easier to tap
-                          >
-                            <option value="" disabled>
-                              Add to board...
-                            </option>
-                            {boards.map((board) => (
-                              <option key={board.id} value={board.id}>
-                                {board.title}
+                          <>
+                          <label className="block w-full">
+                            <select
+                              className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-3 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                              onChange={(e) => handleAddToBoard(item, Number(e.target.value))}
+                              defaultValue=""
+                              style={{ minHeight: "38px", WebkitAppearance: "none" }} // WebKit fix
+                            >
+                              <option value="" disabled>
+                                Add to board...
                               </option>
-                            ))}
-                          </select>
+                              {boards.map((board) => (
+                                <option key={board.id} value={board.id}>
+                                  {board.title}
+                                </option>
+                              ))}
+                            </select>
+                            </label>
+                          </>
                         )}
                       </div>
                     </div>
