@@ -302,7 +302,7 @@ export default function BoardList() {
                   return (
                     <div
                       key={item.id}
-                      className="group relative bg-neutral-800 border border-neutral-700 rounded-lg h-64 overflow-hidden shadow-md hover:shadow-lg cursor-grab active:cursor-grabbing transition-all"
+                      className="group relative bg-neutral-800 border border-neutral-700 rounded-lg h-64 overflow-hidden shadow-0md hover:shadow-lg cursor-grab active:cursor-grabbing transition-all touch-no-hover"
                     >
                       {/* Delete Button */}
                       <button
@@ -320,7 +320,7 @@ export default function BoardList() {
                             console.error("Error deleting item:", err);
                           }
                         }}
-                        className="absolute top-2 right-2 z-10 text-red-500 hover:text-red-400 text-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        className="absolute top-2 right-2 z-10 text-red-500 hover:text-red-400 text-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 touch-show-x"
                         title="Delete item"
                       >
                         ✕

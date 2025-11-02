@@ -21,3 +21,17 @@
 html, body {
   overscroll-behavior: none;
 }
+
+/* Disable hover effects on touch-only devices */
+@media (hover: none) {
+  .touch-no-hover:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Always show the delete X on touch */
+  .touch-show-x {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
