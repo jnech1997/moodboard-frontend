@@ -245,7 +245,7 @@ export default function BoardView() {
           <img
             src={
               item.image_url && item.image_url.includes("static")
-                ? `${import.meta.env.VITE_API_URL}${item.image_url}`
+                ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
                 : item.image_url
             }
             alt={item.content}
@@ -298,7 +298,7 @@ export default function BoardView() {
         <img
           src={
             item.image_url.includes("static")
-              ? `${import.meta.env.VITE_API_URL}${item.image_url}`
+              ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
               : item.image_url
           }
           alt={item.content}
