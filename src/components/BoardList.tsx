@@ -162,7 +162,7 @@ export default function BoardList() {
         <p className="text-gray-500 mt-10">No boards yet. Create one above!</p>
       ) : (
         <div className="w-full grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {boards.map((b) => (
+          {boards.map((b, idx) => (
             <div
               key={b.id}
               onClick={
@@ -222,7 +222,7 @@ export default function BoardList() {
                         {b.title}
                       </h2>
                       <p className="text-left text-xs text-neutral-400">
-                        Board #{b.id}
+                        Board #{idx + 1}
                       </p>
                     </div>
                     <button
