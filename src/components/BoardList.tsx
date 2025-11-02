@@ -351,31 +351,28 @@ export default function BoardList() {
                       )}
 
                       {/* Add to Board Selector */}
-                      <div className="absolute bottom-2 inset-x-2 flex flex-col gap-1 z-10 pointer-events-auto">
+                      <div className="absolute bottom-2 inset-x-2 flex flex-col gap-1">
                         {addedToBoard ? (
                           <span className="text-green-400 text-xs animate-pulse">
                             ✓ Added!
                           </span>
                         ) : (
-                          <>
-                          <label className="block w-full">
-                            <select
-                              className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-3 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                              onChange={(e) => handleAddToBoard(item, Number(e.target.value))}
-                              defaultValue=""
-                              style={{ minHeight: "38px", WebkitAppearance: "none" }} // WebKit fix
-                            >
-                              <option value="" disabled>
-                                Add to board...
+                          <select
+                            className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-2 py-1"
+                            onChange={(e) =>
+                              handleAddToBoard(item, Number(e.target.value))
+                            }
+                            defaultValue=""
+                          >
+                            <option value="" disabled>
+                              Add to board...
+                            </option>
+                            {boards.map((board) => (
+                              <option key={board.id} value={board.id}>
+                                {board.title}
                               </option>
-                              {boards.map((board) => (
-                                <option key={board.id} value={board.id}>
-                                  {board.title}
-                                </option>
-                              ))}
-                            </select>
-                            </label>
-                          </>
+                            ))}
+                          </select>
                         )}
                       </div>
                     </div>
