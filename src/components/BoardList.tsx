@@ -20,6 +20,7 @@ export default function BoardList() {
   // --- Data Fetching ---
   const fetchBoards = async () => {
     try {
+      console.log("VERCEL ENV API IS: ", import.meta.env.VITE_API_URL);
       setInitialLoad(true);
       const res = await api.get("/boards");
       setBoards(res.data);
