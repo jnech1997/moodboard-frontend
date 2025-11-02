@@ -349,9 +349,13 @@ export default function BoardList() {
                           </p>
                         </div>
                       )}
-
+                      
                       {/* Add to Board Selector */}
-                      <div className="absolute bottom-2 inset-x-2 flex flex-col gap-1">
+                     <div
+                        className="absolute bottom-2 inset-x-2 flex flex-col gap-1 z-50 pointer-events-auto"
+                        onMouseDown={(e) => e.stopPropagation()} // Prevents parent focus
+                        onTouchStart={(e) => e.stopPropagation()} // iOS friendly
+                      >
                         {addedToBoard ? (
                           <span className="text-green-400 text-xs animate-pulse">
                             ✓ Added!
