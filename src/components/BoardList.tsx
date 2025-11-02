@@ -161,7 +161,7 @@ export default function BoardList() {
       ) : boards.length === 0 ? (
         <p className="text-gray-500 mt-10">No boards yet. Create one above!</p>
       ) : (
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="w-full grid gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {boards.map((b) => (
             <div
               key={b.id}
