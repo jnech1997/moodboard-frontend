@@ -270,7 +270,10 @@ export default function BoardList() {
             </div>
 
             {/* Search Form */}
-            <form onSubmit={handleSearch} className="flex gap-3 mb-6">
+            <form
+              onSubmit={handleSearch}
+              className="flex flex-col sm:flex-row gap-3 mb-6"
+            >
               <input
                 type="text"
                 value={searchQuery}
@@ -280,7 +283,7 @@ export default function BoardList() {
               />
               <button
                 type="submit"
-                className="bg-blue-600 px-4 py-2 text-white rounded-md hover:bg-blue-500 transition"
+                className="bg-blue-600 px-4 py-2 text-white rounded-md hover:bg-blue-500 transition w-full sm:w-auto"
               >
                 {searching ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
