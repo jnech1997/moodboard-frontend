@@ -351,18 +351,17 @@ export default function BoardList() {
                       )}
 
                       {/* Add to Board Selector */}
-                      <div className="absolute bottom-2 inset-x-2 flex flex-col gap-1">
+                      <div className="absolute bottom-2 inset-x-2 flex flex-col gap-1 z-10 pointer-events-auto">
                         {addedToBoard ? (
                           <span className="text-green-400 text-xs animate-pulse">
                             ✓ Added!
                           </span>
                         ) : (
                           <select
-                            className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-2 py-1"
-                            onChange={(e) =>
-                              handleAddToBoard(item, Number(e.target.value))
-                            }
+                            className="w-full bg-neutral-700 border border-neutral-600 text-xs text-gray-200 rounded-md px-3 py-2 sm:py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => handleAddToBoard(item, Number(e.target.value))}
                             defaultValue=""
+                            style={{ minHeight: "38px" }} // Makes it easier to tap
                           >
                             <option value="" disabled>
                               Add to board...
