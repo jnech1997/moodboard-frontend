@@ -7,13 +7,14 @@ export default function BoardView() {
   const { id } = useParams();
   const location = useLocation() as any;
 
-  // Fallback title if navigation state not provided
   const initialTitle = location?.state?.title || `Board #${id}`;
 
   // --- State Management --- //
 
   const [items, setItems] = useState<any[]>([]);
   const [renderedItems, setRenderedItems] = useState<any[]>([]);
+  const [styleMap, setStyleMap] = useState<{ [id: number]: any }>({}); 
+
   const [clusters, setClusters] = useState<any[]>([]);
   const [title, setTitle] = useState(initialTitle);
   const [newTitle, setNewTitle] = useState(initialTitle);
@@ -34,15 +35,22 @@ export default function BoardView() {
     const initBoard = async () => {
       try {
         await fetchBoardTitle();
-        await pollItemsUntilProcessed();
-      } finally {
+
+        // Initial items fetch
+        const res = await api.get(`/boards/${id}/items`);
+        setItems(res.data);
+        setLoading(false);
+
+        // Continue polling for embeddings, but silently
+        pollItemsUntilProcessed();
+      } catch (error) {
         setLoading(false);
       }
     };
     initBoard();
   }, [id]);
 
-  // Auto-resize textarea when editing title
+  // Auto-resize title textarea
   useEffect(() => {
     if (titleInputRef.current) {
       titleInputRef.current.style.height = "0px";
@@ -51,17 +59,30 @@ export default function BoardView() {
     }
   }, [newTitle, editingTitle]);
 
-  // Randomize item style props whenever items change
+  // Apply cached/randomized styles when items change
   useEffect(() => {
     if (items.length > 0) {
-      const randomized = items.map((item) => ({
-        ...item,
-        font: randomClass(fontCombos),
-        size: randomClass(sizeClasses),
-        img: randomClass(imageSizeClasses),
-        shadow: randomClass(shadowClasses),
-      }));
-      setRenderedItems(randomized);
+      setRenderedItems(() => {
+        const updatedStyleMap = { ...styleMap };
+
+        items.forEach((item) => {
+          if (!updatedStyleMap[item.id]) {
+            updatedStyleMap[item.id] = {
+              font: randomClass(fontCombos),
+              size: randomClass(sizeClasses),
+              img: randomClass(imageSizeClasses),
+              shadow: randomClass(shadowClasses),
+            };
+          }
+        });
+
+        setStyleMap(updatedStyleMap);
+
+        return items.map((item) => ({
+          ...item,
+          ...updatedStyleMap[item.id],
+        }));
+      });
     } else {
       setRenderedItems([]);
     }
@@ -80,14 +101,32 @@ export default function BoardView() {
   };
 
   const pollItemsUntilProcessed = async () => {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
       await new Promise((r) => setTimeout(r, 1000));
+
       const res = await api.get(`/boards/${id}/items`);
       const updatedItems = res.data;
-      setItems(updatedItems);
+
+      setItems((prevItems) => {
+        const nextItems = [...prevItems];
+        let somethingChanged = false;
+
+        for (let j = 0; j < updatedItems.length; j++) {
+          const newItem = updatedItems[j];
+          const oldItem = prevItems.find((i) => i.id === newItem.id);
+
+          if (oldItem && oldItem.embedding === null && newItem.embedding !== null) {
+            const idx = nextItems.findIndex((i) => i.id === newItem.id);
+            nextItems[idx] = { ...newItem };
+            somethingChanged = true;
+          }
+        }
+
+        return somethingChanged ? nextItems : prevItems;
+      });
 
       if (updatedItems.every((item: any) => item.embedding !== null)) {
-        return;
+        break;
       }
     }
   };
