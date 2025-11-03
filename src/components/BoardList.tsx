@@ -9,7 +9,6 @@ export default function BoardList() {
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [loading] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -34,6 +33,51 @@ export default function BoardList() {
     fetchBoards();
   }, []);
 
+  // --- Item + Board Operations ---
+
+  const generateTempId = () =>
+    `temp-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+  const addBoard = async () => {
+    const trimmedTitle = newBoardTitle.trim();
+    if (!trimmedTitle) return;
+
+    const tempId = generateTempId();
+
+    const tempBoard = {
+      id: tempId,
+      title: trimmedTitle,
+      preview_items: [],
+      isGenerating: true,
+    };
+
+    setBoards((prev) => [tempBoard, ...prev]);
+    setNewBoardTitle("");
+
+    try {
+      const res = await api.post("/boards", { title: trimmedTitle });
+      const newBoard = res.data;
+
+      setBoards((prev) =>
+        prev.map((b) =>
+          b.id === tempId ? { ...newBoard, isGenerating: false } : b
+        )
+      );
+    } catch (err) {
+      console.error("Error creating board:", err);
+      setBoards((prev) => prev.filter((b) => b.id !== tempId));
+    }
+  };
+
+  const deleteBoard = async (id: number) => {
+    try {
+      await api.delete(`/boards/${id}`);
+      fetchBoards();
+    } catch (err) {
+      console.error("Error deleting board:", err);
+    }
+  };
+
   // --- Search Handling ---
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +97,6 @@ export default function BoardList() {
     }
   };
 
-  // --- Item + Board Operations ---
   const handleAddToBoard = async (item: any, boardId: number) => {
     setAddStatus((prev) => ({ ...prev, [item.id]: "loading" }));
 
@@ -75,44 +118,7 @@ export default function BoardList() {
     }
   };
 
-  const addBoard = async () => {
-    const title = newBoardTitle.trim();
-    const tempBoard = {
-      id: "temp",
-      title: title || "Creating...",
-      preview_items: [],
-      isGenerating: true,
-    };
-
-    setBoards((prev) => [tempBoard, ...prev]);
-    setNewBoardTitle("");
-
-    try {
-      const res = await api.post("/boards", { title: newBoardTitle });
-      const newBoard = res.data;
-
-      setBoards((prev) => prev.map((b) => (b.id === "temp" ? newBoard : b)));
-    } catch (err) {
-      console.error("Error creating board:", err);
-      setBoards((prev) => prev.filter((b) => b.id !== "temp"));
-    }
-  };
-
-  const deleteBoard = async (id: number) => {
-    try {
-      await api.delete(`/boards/${id}`);
-      fetchBoards();
-    } catch (err) {
-      console.error("Error deleting board:", err);
-    }
-  };
-
-  // --- Helpers ---
-  const handleBoardClick = (
-    e: React.MouseEvent,
-    id: number,
-    title: string
-  ) => {
+  const handleBoardClick = (e: React.MouseEvent, id: number, title: string) => {
     if ((e.target as HTMLElement).closest("[draggable='true']")) return;
     navigate(`/boards/${id}`, { state: { title } });
   };
@@ -142,12 +148,7 @@ export default function BoardList() {
         />
         <button
           onClick={addBoard}
-          disabled={loading}
-          className={`w-full sm:w-auto px-5 py-2 rounded-md font-semibold text-white transition-all duration-200 ${
-            loading
-              ? "bg-gray-600 opacity-50 cursor-not-allowed"
-              : "bg-green-500 hover:bg-green-400 active:scale-95 shadow-md"
-          }`}
+          className="w-full sm:w-auto px-5 py-2 rounded-md font-semibold text-white bg-green-500 hover:bg-green-400 active:scale-95 shadow-md transition-all duration-200"
         >
           Create
         </button>
@@ -302,7 +303,7 @@ export default function BoardList() {
                   return (
                     <div
                       key={item.id}
-                      className="group relative bg-neutral-800 border border-neutral-700 rounded-lg h-64 overflow-hidden shadow-0md hover:shadow-lg cursor-grab active:cursor-grabbing transition-all touch-no-hover"
+                      className="group relative bg-neutral-800 border border-neutral-700 rounded-lg h-64 overflow-hidden shadow-lg hover:shadow-xl cursor-grab active:cursor-grabbing transition-all touch-no-hover"
                     >
                       {/* Delete Button */}
                       <button
@@ -310,9 +311,7 @@ export default function BoardList() {
                           e.preventDefault();
                           e.stopPropagation();
                           try {
-                            await api.delete(
-                              `/boards/${item.board_id}/items/${item.id}`
-                            );
+                            await api.delete(`/boards/${item.board_id}/items/${item.id}`);
                             setSearchResults((prev) =>
                               prev.filter((resItem) => resItem.id !== item.id)
                             );
@@ -332,7 +331,7 @@ export default function BoardList() {
                           <img
                             src={
                               item.image_url.includes("static")
-                                ? `${import.meta.env.VITE_API_URL}${item.image_url}`
+                                ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
                                 : item.image_url
                             }
                             alt={item.content || "item-image"}
@@ -349,12 +348,12 @@ export default function BoardList() {
                           </p>
                         </div>
                       )}
-                      
+
                       {/* Add to Board Selector */}
-                     <div
+                      <div
                         className="absolute bottom-2 inset-x-2 flex flex-col gap-1 z-50 pointer-events-auto"
-                        onMouseDown={(e) => e.stopPropagation()} // Prevents parent focus
-                        onTouchStart={(e) => e.stopPropagation()} // iOS friendly
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
                       >
                         {addedToBoard ? (
                           <span className="text-green-400 text-xs animate-pulse">
