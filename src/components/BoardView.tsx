@@ -108,18 +108,29 @@ export default function BoardView() {
       const updatedItems = res.data;
 
       setItems((prevItems) => {
-        const nextItems = [...prevItems];
         let somethingChanged = false;
 
-        for (let j = 0; j < updatedItems.length; j++) {
-          const newItem = updatedItems[j];
+        // Detect added or updated items
+        const nextItems = updatedItems.map((newItem : any) => {
           const oldItem = prevItems.find((i) => i.id === newItem.id);
 
-          if (oldItem && oldItem.embedding === null && newItem.embedding !== null) {
-            const idx = nextItems.findIndex((i) => i.id === newItem.id);
-            nextItems[idx] = { ...newItem };
-            somethingChanged = true;
+          if (!oldItem) {
+            somethingChanged = true; // New item added
+            return newItem;
           }
+
+          if (oldItem.embedding === null && newItem.embedding !== null) {
+            somethingChanged = true; // Embedding updated
+            return newItem;
+          }
+
+          // No change to this item; keep original
+          return oldItem;
+        });
+
+        // Detect deleted items
+        if (prevItems.length !== nextItems.length) {
+          somethingChanged = true;
         }
 
         return somethingChanged ? nextItems : prevItems;
