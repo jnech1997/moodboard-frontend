@@ -38,17 +38,24 @@ frontend/
 
 ### 1. Install Dependencies
 
+```bash
 cd frontend
+
 npm install
+```
 
 ### 2. Add .env.local
 
+```bash
 VITE_API_URL=http://localhost:8000/api
 VITE_STATIC_URL=http://localhost:8000
+```
 
 ### 3. Run Dev Server
 
+```bash
 npm run dev
+```
 
 Visit:
 http://localhost:5173
