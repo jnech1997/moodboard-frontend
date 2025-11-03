@@ -1,4 +1,4 @@
-# 🎨 MoodBoard Frontend — React + Tailwind + Vite
+# MoodBoard Frontend — React + Tailwind + Vite
 
 The React frontend for MoodBoard, a visual mood board interface with AI clustering. Built with modern tools like Vite and Tailwind, deployed on Vercel, live at: https://moodboard-frontend-ten.vercel.app/.
 
@@ -13,6 +13,14 @@ The React frontend for MoodBoard, a visual mood board interface with AI clusteri
 - Vercel – auto CI/CD + deployment
 
 ---
+
+## ✨ Features
+
+- Create and browse boards
+- Upload or paste text/images
+- Global semantic search
+- Dynamic clustering + GPT labeling
+- Responsive mobile layout
 
 ## 📁 Structure
 
@@ -38,30 +46,27 @@ frontend/
 
 ### 1. Install Dependencies
 
+```bash
 cd frontend
+
 npm install
+```
 
 ### 2. Add .env.local
 
+```bash
 VITE_API_URL=http://localhost:8000/api
 VITE_STATIC_URL=http://localhost:8000
+```
 
 ### 3. Run Dev Server
 
+```bash
 npm run dev
+```
 
 Visit:
 http://localhost:5173
-
----
-
-## ✨ Features
-
-- Create and browse boards
-- Upload or paste text/images
-- Global semantic search
-- Dynamic clustering + GPT labeling
-- Responsive mobile layout
 
 ---
 
