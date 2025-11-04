@@ -266,6 +266,59 @@ export default function BoardView() {
     </div>
   );
 
+  const renderClusterItem = (item: any) => (
+    <div
+      key={item.id}
+      className="relative bg-neutral-800 border border-neutral-700 rounded-2xl overflow-hidden h-64 flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_24px_rgba(59,130,246,0.25)] transition-all duration-200"
+    >
+      {/* Delete Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteItem(item.id);
+        }}
+        disabled={deleting === item.id}
+        className={`absolute top-2 right-2 z-20 text-red-500 hover:text-red-400 text-xl ${
+          deleting === item.id
+            ? "opacity-50 cursor-not-allowed"
+            : "opacity-100 cursor-pointer"
+        }`}
+        title="Delete item"
+      >
+        {deleting === item.id ? (
+          <span className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
+        ) : (
+          "✕"
+        )}
+      </button>
+
+      {/* Item Content */}
+      {item.image_url && (
+        <img
+          src={
+            item.image_url.includes("static")
+              ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
+              : item.image_url
+          }
+          alt={item.content || ""}
+          className={`object-cover w-full ${
+            item.content ? "h-40" : "h-full"
+          }`}
+        />
+      )}
+
+      {item.content && (
+        <div
+          className={`flex items-center justify-center text-gray-300 text-center px-4 py-2 text-sm ${
+            item.image_url ? "h-24" : "h-full"
+          } overflow-hidden`}
+        >
+          <p>{item.content}</p>
+        </div>
+      )}
+    </div>
+  );
+
   // --- Page Render --- //
   if (loading) {
     return (
@@ -337,15 +390,11 @@ export default function BoardView() {
           <div className="space-y-10 mt-6">
             {clusters.map((cluster, ci) => (
               <div key={ci}>
-                <h2 className="text-2xl font-bold mb-3 border-b border-neutral-700 pb-1">
+                <h2 className="text-2xl font-bold text-white mb-3 border-b border-neutral-700 pb-1">
                   {cluster.label}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
-                  {cluster.items.map((item: any) => (
-                    <div key={item.id} className="relative">
-                      {renderItemCard(item)}
-                    </div>
-                  ))}
+                  {cluster.items.map((item: any) => renderClusterItem(item))}
                 </div>
               </div>
             ))}
