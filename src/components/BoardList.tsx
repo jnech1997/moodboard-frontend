@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiSearch, FiX } from "react-icons/fi";
 import { api } from "../api";
+import axios from "axios";
+import type { CancelTokenSource } from "axios";
 
 export default function BoardList() {
   // --- State Management ---
@@ -16,14 +18,41 @@ export default function BoardList() {
 
   const navigate = useNavigate();
 
+  let cancelTokenSource: CancelTokenSource | null = null;
   // --- Data Fetching ---
-  const fetchBoards = async () => {
+
+  const fetchBoards = async (retryCount = 0) => {
+    // Cancel any previous request
+    if (cancelTokenSource) {
+      cancelTokenSource.cancel("New request initiated, canceling previous one.");
+    }
+
+    cancelTokenSource = axios.CancelToken.source();
+
     try {
       setInitialLoad(true);
-      const res = await api.get("/boards");
+
+      const res = await api.get("/boards", {
+        cancelToken: cancelTokenSource.token,
+        timeout: 5000, // 5-second timeout
+      });
+
       setBoards(res.data);
     } catch (err) {
+      if (axios.isCancel(err)) {
+        console.warn("Previous /boards request canceled:", err.message);
+        return;
+      }
+
       console.error("Error fetching boards:", err);
+
+      if (retryCount < 5) {
+        const delay = Math.min(1000 * 2 ** retryCount, 10000);
+        console.log(`Retrying in ${delay}ms...`);
+        setTimeout(() => fetchBoards(retryCount + 1), delay);
+      } else {
+        console.error("Max retries reached for fetching boards.");
+      }
     } finally {
       setInitialLoad(false);
     }
