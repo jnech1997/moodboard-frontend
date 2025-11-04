@@ -26,8 +26,8 @@ export default function FloatingInputBar({
   };
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 left-auto right-6 w-[440px] z-50">
-      <div className="flex flex-col flex-row items-stretch items-center gap-2 gap-3 bg-neutral-900 border border-neutral-700 shadow-lg px-4 py-3 rounded-lg">
+    <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-6 sm:w-[440px] z-50">
+      <div className="flex flex-col flex-row items-stretch items-center gap-2 sm:gap-3 bg-neutral-900 border border-neutral-700 shadow-lg px-4 py-3 rounded-lg">
 
         {/* Text Input */}
         <input
