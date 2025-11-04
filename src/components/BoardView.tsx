@@ -1,7 +1,9 @@
+// BoardView.tsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { api } from "../api";
 import FloatingInputBar from "./FloatingBarInput";
+import SearchAndAddModal from "./SearchAndAddModal";
 
 export default function BoardView() {
   const { id } = useParams();
@@ -10,11 +12,9 @@ export default function BoardView() {
   const initialTitle = location?.state?.title || `Board #${id}`;
 
   // --- State Management --- //
-
   const [items, setItems] = useState<any[]>([]);
   const [renderedItems, setRenderedItems] = useState<any[]>([]);
-  const [styleMap, setStyleMap] = useState<{ [id: number]: any }>({}); 
-
+  const [styleMap, setStyleMap] = useState<{ [id: number]: any }>({});
   const [clusters, setClusters] = useState<any[]>([]);
   const [title, setTitle] = useState(initialTitle);
   const [newTitle, setNewTitle] = useState(initialTitle);
@@ -26,31 +26,26 @@ export default function BoardView() {
   const [showClusters, setShowClusters] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [savingTitle, setSavingTitle] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
 
   // --- Effects --- //
-
   useEffect(() => {
     const initBoard = async () => {
       try {
         await fetchBoardTitle();
-
-        // Initial items fetch
         const res = await api.get(`/boards/${id}/items`);
         setItems(res.data);
         setLoading(false);
-
-        // Continue polling for embeddings, but silently
         pollItemsUntilProcessed();
-      } catch (error) {
+      } catch {
         setLoading(false);
       }
     };
     initBoard();
   }, [id]);
 
-  // Auto-resize title textarea
   useEffect(() => {
     if (titleInputRef.current) {
       titleInputRef.current.style.height = "0px";
@@ -59,7 +54,6 @@ export default function BoardView() {
     }
   }, [newTitle, editingTitle]);
 
-  // Apply cached/randomized styles when items change
   useEffect(() => {
     if (items.length > 0) {
       setRenderedItems(() => {
@@ -88,8 +82,7 @@ export default function BoardView() {
     }
   }, [items]);
 
-  // --- Fetch / Poll Functions --- //
-
+  // --- Fetch / Poll Logic --- //
   const fetchBoardTitle = async () => {
     try {
       const res = await api.get(`/boards/${id}`);
@@ -101,8 +94,8 @@ export default function BoardView() {
   };
 
   const pollItemsUntilProcessed = async () => {
-    for (let i = 0; i < 30; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
 
       const res = await api.get(`/boards/${id}/items`);
       const updatedItems = res.data;
@@ -110,56 +103,47 @@ export default function BoardView() {
       setItems((prevItems) => {
         let somethingChanged = false;
 
-        // Detect added or updated items
-        const nextItems = updatedItems.map((newItem : any) => {
+        const nextItems = updatedItems.map((newItem: any) => {
           const oldItem = prevItems.find((i) => i.id === newItem.id);
-
           if (!oldItem) {
-            somethingChanged = true; // New item added
+            somethingChanged = true;
             return newItem;
           }
-
-          if (oldItem.embedding === null && newItem.embedding !== null) {
-            somethingChanged = true; // Embedding updated
+          if (
+            (oldItem.embedding === null && newItem.embedding !== null) ||
+            (oldItem.content === null && newItem.content !== null)
+          ) {
+            somethingChanged = true;
             return newItem;
           }
-
-          // No change to this item; keep original
           return oldItem;
         });
 
-        // Detect deleted items
-        if (prevItems.length !== nextItems.length) {
-          somethingChanged = true;
-        }
+        if (prevItems.length !== nextItems.length) somethingChanged = true;
 
         return somethingChanged ? nextItems : prevItems;
       });
 
-      if (updatedItems.every((item: any) => item.embedding !== null)) {
-        break;
-      }
+      if (updatedItems.every((item: any) => item.embedding !== null && item.content)) break;
     }
   };
 
-  const pollClustersUntilUpdated = async () => {
-    for (let i = 0; i < 10; i++) {
-      await new Promise((r) => setTimeout(r, 1500));
-      const res = await api.get(`/boards/${id}/clusters`);
-      const newClusters = res.data.filter((c: any) => c.label);
+  // --- Search + Add Logic --- //
+  const handleAddFromSearch = async (item: any) => {
+    try {
+      const payload =
+        item.type === "image"
+          ? { type: "image", image_url: item.image_url, content: item.content, source_item_id: item.id }
+          : { type: "text", content: item.content, source_item_id: item.id };
 
-      if (
-        newClusters.length > 0 &&
-        JSON.stringify(newClusters) !== JSON.stringify(clusters)
-      ) {
-        setClusters(newClusters);
-        return;
-      }
+      await api.post(`/boards/${id}/items`, payload);
+      await pollItemsUntilProcessed();
+    } catch (err) {
+      console.error("Error adding search item:", err);
     }
   };
 
   // --- Title Editing --- //
-
   const saveTitle = async () => {
     if (savingTitle || newTitle.trim() === "") return;
 
@@ -176,36 +160,36 @@ export default function BoardView() {
   };
 
   // --- Clustering --- //
-
-  const fetchClusters = async () => {
-    const res = await api.get(`/boards/${id}/clusters`);
-    const validClusters = res.data.filter(
-      (c: any) => c.label && !/^Cluster \d+$/.test(c.label)
-    );
-    setClusters(validClusters);
-  };
-
   const handleComputeClusters = async () => {
     setClustering(true);
     await api.post(`/boards/${id}/cluster`);
-    await pollClustersUntilUpdated();
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const res = await api.get(`/boards/${id}/clusters`);
+      const validClusters = res.data.filter(
+        (c: any) => c.label && !/^Cluster \d+$/.test(c.label)
+      );
+
+      if (validClusters.length > clusters.length) {
+        setClusters(validClusters);
+        break;
+      }
+    }
     setClustering(false);
     setShowClusters(true);
   };
-
-  // --- Item Handlers --- //
 
   const deleteItem = async (itemId: number) => {
     setDeleting(itemId);
     try {
       await api.delete(`/boards/${id}/items/${itemId}`);
       await pollItemsUntilProcessed();
-
       if (showClusters) {
         setShowClusters(false);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        await fetchClusters();
+        const res = await api.get(`/boards/${id}/clusters`);
+        setClusters(res.data.filter((c: any) => c.label));
       }
     } catch (err) {
       console.error("Error deleting item:", err);
@@ -214,60 +198,26 @@ export default function BoardView() {
     }
   };
 
-  // --- Helpers for Randomized Styles --- //
+  // --- Helpers --- //
+  const randomClass = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
-  const fontCombos = useMemo(
-    () => [
-      "font-serif italic tracking-tight",
-      "font-sans font-light uppercase",
-      "font-mono text-sm",
-      "font-serif text-2xl leading-snug",
-      "font-semibold text-base tracking-wide",
-    ],
-    []
-  );
-
-  const sizeClasses = useMemo(
-    () => [
-      "text-2xl p-10 min-h-96 w-[110%] relative left-[-5%]",
-      "text-3xl p-12 min-h-[28rem] w-full",
-      "text-4xl p-12 min-h-[28rem] w-full",
-    ],
-    []
-  );
-
-  const imageSizeClasses = useMemo(
-    () => ["h-48", "h-64", "h-80", "h-96", "h-[28rem]"],
-    []
-  );
-
-  const shadowClasses = useMemo(
-    () => [
-      "shadow-[0_3px_6px_rgba(0,0,0,0.3)]",
-      "shadow-[0_6px_10px_rgba(0,0,0,0.25)]",
-      "shadow-[0_4px_16px_rgba(0,0,0,0.4)]",
-    ],
-    []
-  );
-
-  const randomClass = (arr: string[]) =>
-    arr[Math.floor(Math.random() * arr.length)];
+  const fontCombos = useMemo(() => ["font-serif italic tracking-tight", "font-sans font-light uppercase", "font-mono text-sm", "font-serif text-2xl leading-snug", "font-semibold text-base tracking-wide"], []);
+  const sizeClasses = useMemo(() => ["text-2xl p-10 min-h-96 w-[110%] relative left-[-5%]", "text-3xl p-12 min-h-[28rem] w-full", "text-4xl p-12 min-h-[28rem] w-full"], []);
+  const imageSizeClasses = useMemo(() => ["h-48", "h-64", "h-80", "h-96", "h-[28rem]"], []);
+  const shadowClasses = useMemo(() => ["shadow-[0_3px_6px_rgba(0,0,0,0.3)]", "shadow-[0_6px_10px_rgba(0,0,0,0.25)]", "shadow-[0_4px_16px_rgba(0,0,0,0.4)]"], []);
 
   // --- Render Functions --- //
-
   const renderItemCard = (item: any) => (
     <div
       key={item.id}
-      className={`group relative inline-block w-full mb-8 break-inside-avoid rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-800 ${item.shadow} hover:shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:-translate-y-1 transition-all duration-200 before:absolute before:inset-0 before:opacity-10 before:pointer-events-none`}
+      className={`group relative inline-block w-full mb-8 rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-800 ${item.shadow} hover:shadow-lg hover:-translate-y-1 transition-all`}
     >
-      {/* Processing Banner */}
-      {item.embedding === null && (
-        <div className="absolute top-0 left-0 right-0 h-8 bg-neutral-900/80 pointer-events-none text-gray-300 text-xs px-2 py-1 z-10 text-center flex items-center justify-center">
-          Processing...
+      {(item.embedding === null || !item.content) && (
+        <div className="absolute top-0 left-0 right-0 h-8 bg-neutral-900/80 text-gray-300 text-xs px-2 z-10 flex items-center justify-center">
+          Processing Embedding...
         </div>
       )}
 
-      {/* Delete Button */}
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -275,7 +225,7 @@ export default function BoardView() {
           deleteItem(item.id);
         }}
         disabled={deleting === item.id}
-        className={`absolute top-2 right-2 z-20 text-red-500 hover:text-red-400 text-xl leading-none transition-opacity duration-200 ${
+        className={`absolute top-2 right-2 z-20 text-red-500 hover:text-red-400 text-xl transition-opacity duration-200 ${
           deleting === item.id
             ? "opacity-50 cursor-not-allowed"
             : "opacity-0 group-hover:opacity-100 cursor-pointer"
@@ -289,16 +239,15 @@ export default function BoardView() {
         )}
       </button>
 
-      {/* Item Content */}
       {item.type === "image" ? (
         <>
           <img
             src={
-              item.image_url && item.image_url.includes("static")
+              item.image_url.includes("static")
                 ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
                 : item.image_url
             }
-            alt={item.content}
+            alt={item.content || ""}
             className={`object-cover w-full ${item.img}`}
           />
           {item.content && (
@@ -309,60 +258,7 @@ export default function BoardView() {
         </>
       ) : (
         <div
-          className={`flex items-center justify-center text-gray-300 text-center ${item.font} ${item.size}`}
-        >
-          <p>{item.content}</p>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderClusterItem = (item: any) => (
-    <div
-      key={item.id}
-      className="relative bg-neutral-800 border border-neutral-700 rounded-2xl overflow-hidden h-64 flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.35)] hover:shadow-[0_8px_24px_rgba(59,130,246,0.25)] transition-all duration-200"
-    >
-      {/* Delete Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteItem(item.id);
-        }}
-        disabled={deleting === item.id}
-        className={`absolute top-2 right-2 z-20 text-red-500 hover:text-red-400 text-xl leading-none transition-opacity duration-200 ${
-          deleting === item.id
-            ? "opacity-50 cursor-not-allowed"
-            : "opacity-100 cursor-pointer"
-        }`}
-        title="Delete item"
-      >
-        {deleting === item.id ? (
-          <span className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
-        ) : (
-          "✕"
-        )}
-      </button>
-
-      {/* Item Content */}
-      {item.image_url && (
-        <img
-          src={
-            item.image_url.includes("static")
-              ? `${import.meta.env.VITE_STATIC_URL}${item.image_url}`
-              : item.image_url
-          }
-          alt={item.content}
-          className={`object-cover w-full ${
-            item.content ? "h-40" : "h-full"
-          }`}
-        />
-      )}
-
-      {item.content && (
-        <div
-          className={`flex items-center justify-center text-gray-300 text-center px-4 py-2 text-sm ${
-            item.image_url ? "h-24" : "h-full"
-          } overflow-hidden`}
+          className={`flex items-center justify-center text-gray-300 ${item.font} ${item.size}`}
         >
           <p>{item.content}</p>
         </div>
@@ -371,7 +267,6 @@ export default function BoardView() {
   );
 
   // --- Page Render --- //
-
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
@@ -382,54 +277,44 @@ export default function BoardView() {
 
   return (
     <div className="min-h-screen bg-neutral-900 text-gray-100 px-10 py-12 space-y-6">
-      {/* Header Section */}
-      <div className="flex items-center justify-between flex-wrap gap-4 w-full">
-        {/* Editable Title */}
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
         {editingTitle ? (
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center animate-fadeIn">
-            <textarea
-              ref={titleInputRef}
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  saveTitle();
-                }
-                if (e.key === "Escape") {
-                  setEditingTitle(false);
-                  setNewTitle(title);
-                }
-              }}
-              className="w-full sm:w-auto bg-neutral-800 border border-neutral-700 rounded-md px-3 py-2 text-3xl font-bold text-white focus:ring-2 focus:ring-blue-500 resize-none leading-tight outline-none"
-              autoFocus
-            />
-            {savingTitle && (
-              <span className="text-xs text-blue-400 animate-pulse ml-2">
-                Saving...
-              </span>
-            )}
-          </div>
+          <textarea
+            ref={titleInputRef}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onBlur={saveTitle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                saveTitle();
+              }
+              if (e.key === "Escape") {
+                setEditingTitle(false);
+                setNewTitle(title);
+              }
+            }}
+            className="bg-neutral-800 border border-neutral-700 rounded-md px-3 py-2 text-3xl font-bold text-white focus:ring-2 focus:ring-blue-500 resize-none"
+            autoFocus
+          />
         ) : (
           <h1
             className="text-4xl font-extrabold text-white cursor-pointer hover:text-blue-300 transition"
             onClick={() => setEditingTitle(true)}
-            title="Click to edit title"
           >
             {title}
           </h1>
         )}
 
-        {/* Clustering + Control Buttons */}
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex gap-3">
           <button
             onClick={handleComputeClusters}
             disabled={clustering}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition disabled:opacity-50"
           >
             {clustering ? (
-              <span className="w-4 h-4 border-2 border-white/70 border-t-transparent rounded-full animate-spin inline-block" />
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
             ) : (
               "Compute Clusters"
             )}
@@ -438,7 +323,7 @@ export default function BoardView() {
           {clusters.length > 0 && !clustering && (
             <button
               onClick={() => setShowClusters(!showClusters)}
-              className="bg-neutral-800 px-4 py-2 border border-neutral-700 text-gray-200 rounded-md hover:bg-neutral-700 transition"
+              className="bg-neutral-800 px-4 py-2 border border-neutral-700 rounded-md text-gray-200 hover:bg-neutral-700"
             >
               {showClusters ? "Hide Clusters" : "View Clusters"}
             </button>
@@ -446,33 +331,35 @@ export default function BoardView() {
         </div>
       </div>
 
-      {/* Content Section */}
+      {/* Content */}
       {showClusters ? (
         clusters.length > 0 ? (
           <div className="space-y-10 mt-6">
             {clusters.map((cluster, ci) => (
               <div key={ci}>
-                <h2 className="text-2xl font-bold text-white mb-3 border-b border-neutral-700 pb-1">
+                <h2 className="text-2xl font-bold mb-3 border-b border-neutral-700 pb-1">
                   {cluster.label}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
-                  {cluster.items.map((item: any) => renderClusterItem(item))}
+                  {cluster.items.map((item: any) => (
+                    <div key={item.id} className="relative">
+                      {renderItemCard(item)}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 mt-10 text-center">
-            Clustering in progress...
-          </p>
+          <p className="text-gray-400 mt-10 text-center">Clustering in progress...</p>
         )
       ) : (
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-3 2xl:columns-4 gap-8 [column-fill:balance]">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-8">
           {renderedItems.map((item) => renderItemCard(item))}
         </div>
       )}
 
-      {/* Floating Input Bar */}
+      {/* Floating Bar for adding items */}
       <FloatingInputBar
         boardId={Number(id)}
         addingText={addingText}
@@ -490,15 +377,20 @@ export default function BoardView() {
           }
           setAddingText(true);
           try {
-            await api.post(`/boards/${id}/items`, {
-              type: "text",
-              content,
-            });
+            await api.post(`/boards/${id}/items`, { type: "text", content });
             await pollItemsUntilProcessed();
           } finally {
             setAddingText(false);
           }
         }}
+        onSearch={() => setIsSearchModalOpen(true)}
+      />
+
+      <SearchAndAddModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onAdd={handleAddFromSearch}
+        boardId={Number(id)}
       />
     </div>
   );
