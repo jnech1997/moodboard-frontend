@@ -42,21 +42,22 @@ export default function FloatingInputBar({
         />
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 w-full">
 
           {/* 🔍 Search button */}
           <button
             onClick={onSearch}
-            className="bg-neutral-700 hover:bg-neutral-600 text-white font-medium px-4 py-2 rounded-md transition active:scale-95"
+            className="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-medium px-4 py-2 rounded-md transition active:scale-95 flex items-center justify-center"
             title="Search items"
           >
             <FiSearch className="text-lg" />
           </button>
 
+          {/* ➕ Add text button */}
           <button
             onClick={handleAdd}
             disabled={addingText}
-            className="bg-green-600 hover:bg-green-500 text-white font-medium px-6 py-2 rounded-md transition disabled:opacity-50 active:scale-95 w-full w-auto"
+            className="flex-1 bg-green-600 hover:bg-green-500 text-white font-medium px-6 py-2 rounded-md transition disabled:opacity-50 active:scale-95 flex items-center justify-center"
           >
             {addingText ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
@@ -65,9 +66,11 @@ export default function FloatingInputBar({
             )}
           </button>
 
-          <div className="flex items-center justify-center w-full w-auto">
+          {/* 🖼️ Upload image */}
+          <div className="flex-1 flex items-center justify-center">
             <UploadImage boardId={boardId} onUpload={onUpload} />
           </div>
+
         </div>
       </div>
     </div>

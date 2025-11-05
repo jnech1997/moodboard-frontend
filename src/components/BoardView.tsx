@@ -360,11 +360,11 @@ export default function BoardView() {
           </h1>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
           <button
             onClick={handleComputeClusters}
             disabled={clustering}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition disabled:opacity-50"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition disabled:opacity-50 w-full sm:w-auto"
           >
             {clustering ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
@@ -376,7 +376,7 @@ export default function BoardView() {
           {clusters.length > 0 && !clustering && (
             <button
               onClick={() => setShowClusters(!showClusters)}
-              className="bg-neutral-800 px-4 py-2 border border-neutral-700 rounded-md text-gray-200 hover:bg-neutral-700"
+              className="bg-neutral-800 px-4 py-2 border border-neutral-700 rounded-md text-gray-200 hover:bg-neutral-700 w-full sm:w-auto"
             >
               {showClusters ? "Hide Clusters" : "View Clusters"}
             </button>

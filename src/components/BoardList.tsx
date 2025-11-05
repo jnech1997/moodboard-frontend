@@ -55,7 +55,9 @@ export default function BoardList() {
     try {
       const res = await api.post("/boards", { title: trimmedTitle });
       const newBoard = res.data;
-      setBoards((prev) => prev.map((b) => (b.id === tempId ? { ...newBoard, isGenerating: false } : b)));
+      setBoards((prev) =>
+        prev.map((b) => (b.id === tempId ? { ...newBoard, isGenerating: false } : b))
+      );
     } catch (err) {
       setBoards((prev) => prev.filter((b) => b.id !== tempId));
     }
@@ -120,7 +122,10 @@ export default function BoardList() {
               }`}
             >
               {b.isGenerating ? (
-                <div className="flex items-center justify-center h-full text-gray-400">Generating...</div>
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-300">
+                  <div className="w-10 h-10 border-4 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm">Generating...</span>
+                </div>
               ) : (
                 <>
                   <div className="flex-1 grid grid-cols-2 grid-rows-3 gap-2 px-2 py-2 bg-neutral-900">
