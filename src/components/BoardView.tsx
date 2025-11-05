@@ -331,7 +331,7 @@ export default function BoardView() {
   return (
     <div className="min-h-screen bg-neutral-900 text-gray-100 px-10 py-12 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {editingTitle ? (
           <textarea
             ref={titleInputRef}
@@ -348,19 +348,20 @@ export default function BoardView() {
                 setNewTitle(title);
               }
             }}
-            className="bg-neutral-800 border border-neutral-700 rounded-md px-3 py-2 text-3xl font-bold text-white focus:ring-2 focus:ring-blue-500 resize-none"
+            className="bg-neutral-800 border border-neutral-700 rounded-md px-3 py-2 text-3xl font-bold text-white focus:ring-2 focus:ring-blue-500 resize-none w-full sm:w-auto"
             autoFocus
           />
         ) : (
           <h1
-            className="text-4xl font-extrabold text-white cursor-pointer hover:text-blue-300 transition"
+            className="text-4xl font-extrabold text-white cursor-pointer hover:text-blue-300 transition w-full sm:w-auto"
             onClick={() => setEditingTitle(true)}
           >
             {title}
           </h1>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+        {/* Buttons: shifted under title on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleComputeClusters}
             disabled={clustering}
