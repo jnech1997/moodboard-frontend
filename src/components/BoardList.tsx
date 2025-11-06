@@ -45,16 +45,14 @@ export default function BoardList() {
 
   const addBoard = async () => {
     const trimmedTitle = newBoardTitle.trim();
-    const titleToUse = trimmedTitle || "Untitled Board";
-
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-    const tempBoard = { id: tempId, title: titleToUse, preview_items: [], isGenerating: true };
+    const tempBoard = { id: tempId, title: trimmedTitle, preview_items: [], isGenerating: true };
     setBoards((prev) => [tempBoard, ...prev]);
     setNewBoardTitle("");
 
     try {
-      const res = await api.post("/boards", { title: titleToUse });
+      const res = await api.post("/boards", { title: trimmedTitle });
       const newBoard = res.data;
       setBoards((prev) =>
         prev.map((b) => (b.id === tempId ? { ...newBoard, isGenerating: false } : b))
