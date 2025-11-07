@@ -137,8 +137,7 @@ export default function BoardView() {
       });
 
       if (
-        updatedItems.every((item: any) => item.embedding !== null && item.content) ||
-        unchangedPolls >= 3
+        updatedItems.every((item: any) => item.embedding !== null && item.content)
       ) {
         break;
       }
