@@ -35,8 +35,7 @@ export default function BoardView() {
     const initBoard = async () => {
       try {
         await fetchBoardTitle();
-        const res = await api.get(`/boards/${id}/items`);
-        setItems(res.data);
+        await fetchItemsOnce();
         setLoading(false);
         pollItemsUntilProcessed();
       } catch {
@@ -93,8 +92,18 @@ export default function BoardView() {
     }
   };
 
+  const fetchItemsOnce = async () => {
+    try {
+      const res = await api.get(`/boards/${id}/items`);
+      setItems(res.data);
+    } catch (err) {
+      console.error("Error fetching items:", err);
+    }
+  };
+
   const pollItemsUntilProcessed = async () => {
-    for (let i = 0; i < 100; i++) {
+    let unchangedPolls = 0;
+    for (let i = 0; i < 50; i++) {
       await new Promise((r) => setTimeout(r, 2000));
 
       const res = await api.get(`/boards/${id}/items`);
@@ -121,10 +130,18 @@ export default function BoardView() {
 
         if (prevItems.length !== nextItems.length) somethingChanged = true;
 
+        if (!somethingChanged) unchangedPolls++;
+        else unchangedPolls = 0;
+
         return somethingChanged ? nextItems : prevItems;
       });
 
-      if (updatedItems.every((item: any) => item.embedding !== null && item.content)) break;
+      if (
+        updatedItems.every((item: any) => item.embedding !== null && item.content) ||
+        unchangedPolls >= 3
+      ) {
+        break;
+      }
     }
   };
 
@@ -161,20 +178,22 @@ export default function BoardView() {
 
   // --- Clustering --- //
   const handleComputeClusters = async () => {
+    setClusters([]);
     setClustering(true);
+
     await api.post(`/boards/${id}/cluster`);
+
     for (let i = 0; i < 10; i++) {
       await new Promise((r) => setTimeout(r, 1500));
       const res = await api.get(`/boards/${id}/clusters`);
-      const validClusters = res.data.filter(
-        (c: any) => c.label && !/^Cluster \d+$/.test(c.label)
-      );
-
-      if (validClusters.length > clusters.length) {
+      const validClusters = res.data.filter((c: any) => c.label);
+      
+      if (validClusters.length > 0) {
         setClusters(validClusters);
         break;
       }
     }
+
     setClustering(false);
     setShowClusters(true);
   };
@@ -184,8 +203,10 @@ export default function BoardView() {
     try {
       await api.delete(`/boards/${id}/items/${itemId}`);
       await pollItemsUntilProcessed();
+
       if (showClusters) {
         setShowClusters(false);
+        setClusters([]); // Clear clusters to prevent stale data
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const res = await api.get(`/boards/${id}/clusters`);
@@ -416,6 +437,7 @@ export default function BoardView() {
         onUpload={async () => {
           if (showClusters) {
             setShowClusters(false);
+            setClusters([]);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
           await pollItemsUntilProcessed();
@@ -423,6 +445,7 @@ export default function BoardView() {
         onAddText={async (content: string) => {
           if (showClusters) {
             setShowClusters(false);
+            setClusters([]);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
           setAddingText(true);
