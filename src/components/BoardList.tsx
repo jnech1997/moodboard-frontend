@@ -40,7 +40,22 @@ export default function BoardList() {
   };
 
   useEffect(() => {
-    fetchBoards();
+    const pingHealth = async () => {
+      console.log("pinging health...");
+      try {
+        const res = await api.get("/health");
+        console.log("health ok:", res.data);
+      } catch (err) {
+        console.error("API health check failed:", err);
+      }
+    };
+
+    const init = async () => {
+      await pingHealth();
+      await fetchBoards();
+    };
+
+    init();
   }, []);
 
   const addBoard = async () => {
